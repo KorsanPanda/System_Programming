@@ -1,0 +1,11 @@
+Sembol          | Adres      | Tip       
+---------------------------------------------
+topla_ve_surekli_yaz | 0x00000000 | GLOBAL    
+onlar_basamagi_dongu | 0x0000001C | LOCAL     
+basamaklar_hazir | 0x00000034 | LOCAL     
+tek_sefer_gonder_dongusu | 0x00000040 | LOCAL     
+out_loop1       | 0x00000048 | LOCAL     
+in_loop1        | 0x0000004C | LOCAL     
+out_loop2       | 0x00000064 | LOCAL     
+in_loop2        | 0x00000068 | LOCAL     
+programi_durdur | 0x00000078 | LOCAL     

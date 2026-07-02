@@ -1,0 +1,5 @@
+Sembol          | Adres      | Tip       
+---------------------------------------------
+topla_ve_surekli_yaz | 0x00000000 | EXTERN    
+main            | 0x00000000 | GLOBAL    
+buton_bekle     | 0x00000008 | LOCAL     

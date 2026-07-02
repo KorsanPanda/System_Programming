@@ -1,0 +1,4 @@
+Global Sembol   | Kesin Adres 
+-----------------------------------
+main            | 0x00000000
+topla_          | 0x0000001C
