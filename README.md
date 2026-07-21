@@ -1,74 +1,111 @@
-# System_Programming# ⚡ System Programming FPGA (Gowin GW1NR-9K / VHDL & Verilog & Python)
+# ⚡ System Programming RISC-V SoC on Tang Nano 9K FPGA
 
 ![Hardware](https://img.shields.io/badge/Board-Gowin_Tang_Nano_9K-orange.svg)
 ![FPGA](https://img.shields.io/badge/FPGA-GW1NR--9K-blue.svg)
-![HDL](https://img.shields.io/badge/HDL-VHDL%20%7C%20Verilog-green.svg)
-![Scripting](https://img.shields.io/badge/Scripting-Python_3-purple.svg)
-![Toolchain](https://img.shields.io/badge/Toolchain-Gowin_EDA-red.svg)
+![Processor](https://img.shields.io/badge/CPU-PicoRV32_RISC--V-green.svg)
+![HDL](https://img.shields.io/badge/HDL-VHDL-blue.svg)
+![Scripting](https://img.shields.io/badge/Toolchain-Custom_Python_Assembler_%26_Linker-purple.svg)
 
-A hybrid hardware-software system programming project deployed on the **Gowin Tang Nano 9K FPGA (GW1NR-9K)** board. The system combines **VHDL** and **Verilog** for digital logic/RTL design alongside **Python** scripts for host-side automation, serial communication, and data processing.
+A complete hardware-software co-design system programming framework built on the **Gowin Tang Nano 9K FPGA (GW1NR-9K)**. The project integrates a **PicoRV32 RISC-V CPU core** in VHDL, a custom **UART Bootloader FSM**, and a ground-up **Python-based Assembler & Linker toolchain** for building and flashing RISC-V firmware over serial interface.
 
 ---
 
 ## 📌 Project Overview
 
-This project implements low-level system programming and digital hardware architectures directly on a physical FPGA platform. By pairing HDL-based hardware modules with host-side Python tooling, the architecture achieves real-time execution, custom peripheral control, and hardware-software co-design.
-
-### Key Features
-* **Multi-HDL Architecture:** Mixed-language RTL design utilizing VHDL for structural/control components and Verilog for data path/peripheral modules.
-* **Gowin 9K FPGA Target:** Optimized for the Gowin GW1NR-9K chip (9K LUTs, embedded BSRAM, onboard USB-JTAG/UART).
-* **Python Host Integration:** Python scripts handle UART/serial communication, testbench automation, data serialization, and verification.
-* **Hardware-Software Co-Design:** Interfacing custom FPGA logic modules with host-side software execution.
+This architecture implements a soft-core RISC-V System-on-Chip (SoC) on FPGA hardware paired with a custom software toolchain:
+* **Custom Python Assembler & Linker (`kodlar.py`):** Parses RISC-V assembly (`.asm`), generates object files (`.obj`), resolves global/extern symbols and branch relocations, and outputs merged machine code (`makine_kodu.hex`).
+* **UART Firmware Loader (`loader_fsm.vhd` & `host.py`):** Transfers binary machine code chunks with XOR checksum verification directly into FPGA Block RAM (BRAM) over UART, automatically releasing CPU reset upon completion.
+* **Memory-Mapped I/O (MMIO):** Interfacing software instructions to physical hardware components:
+  * `0xFFFFFF80`: 6-bit LED Output Port
+  * `0xFFFFFF84`: UART TX Data Register
+  * `0xFFFFFF00`: S2 Hardware Pushbutton Input
 
 ---
 
 ## 🏗️ System Architecture
 
 ```text
-+-----------------------------------------------------------------------+
-|                           Host System (PC)                            |
-|                     Python Automation & Communication                 |
-+-----------------------------------++----------------------------------+
-                                    || UART / USB Serial
-+-----------------------------------vv----------------------------------+
-|                  Gowin Tang Nano 9K FPGA (GW1NR-9K)                   |
-|  +--------------------------------+  +-----------------------------+  |
-|  |     VHDL Control Modules       |  |  Verilog Datapath Modules   |  |
-|  |   (FSM / System Logic)         |  |   (Peripherals / Registers) |  |
-|  +--------------------------------+  +-----------------------------+  |
-+-----------------------------------------------------------------------+
++-------------------------------------------------------------------------------+
+|                                Host System (PC)                               |
+|   1. Assembler & Linker (kodlar.py)  --> Generates makine_kodu.hex          |
+|   2. Serial Host Flasher (host.py)   --> Transmits Firmware via UART (COM)    |
++---------------------------------------++--------------------------------------+
+                                        || UART Serial (115200 Baud)
++---------------------------------------vv--------------------------------------+
+|                    Gowin Tang Nano 9K FPGA (system_top.vhd)                   |
+|                                                                               |
+|   +-------------------+       +--------------------+       +--------------+   |
+|   |   UART RX/TX      | ----> | Loader FSM         | ----> | 16KB BRAM    |   |
+|   | (uart_rx / tx)    |       | (loader_fsm.vhd)   |       | (ram)        |   |
+|   +-------------------+       +--------------------+       +-------+------+   |
+|                                                                    |          |
+|   +-------------------+       +--------------------+               |          |
+|   | LEDs / Button     | <---- | PicoRV32 RISC-V    | <-------------+          |
+|   | (0xFFFFFF80/00)   |       | CPU Core           |                          |
+|   +-------------------+       +--------------------+                          |
++-------------------------------------------------------------------------------+
 ```
+
+---
+
+## 💻 Custom Toolchain & Assembly Workflow
+
+### 1. Custom Assembler & Linker (`kodlar.py`)
+Translates RISC-V Assembly source files (`main2.asm`, `fonksiyon2.asm`) into relocatable object files using instruction formats defined in `opcode_tablosu.txt`, resolves symbol addresses, and generates `makine_kodu.hex`.
+
+### 2. Flashing Firmware (`host.py`)
+Sends the generated machine code over UART to the FPGA. The onboard `loader_fsm.vhd` handles packet assembly, verifies checksums, writes instructions into BRAM, and starts CPU execution.
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-* **Gowin EDA** (Gowin FPGA Designer Suite)
-* **Python 3.8+** (with `pyserial` for communication)
-* Gowin Tang Nano 9K FPGA board
+* **Gowin EDA** (Gowin FPGA Designer)
+* **Python 3.8+** (with `pyserial` installed: `pip install pyserial`)
+* Gowin Tang Nano 9K FPGA Board
 
-### Build and Synthesis
+### Build & Execution Steps
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/USERNAME/System_Programming.git](https://github.com/USERNAME/System_Programming.git)
-   cd System_Programming
+   git clone [https://github.com/KorsanPanda/system_programming.git](https://github.com/KorsanPanda/system_programming.git)
+   cd system_programming
    ```
 
-2. **Synthesis & Bitstream Generation:**
-   * Open `Gowin EDA`.
-   * Open the project file (`.gpn` / `.gprj`).
-   * Add the VHDL (`.vhd`) and Verilog (`.v`) source files from the `hdl/` directory.
-   * Add the physical constraint file (`.cst`) for pin mappings on the Tang Nano 9K.
-   * Run **Synthesize** and **Place & Route**.
-   * Generate Bitstream (`.fs`).
-
-3. **Program the FPGA:**
-   * Connect the Tang Nano 9K via USB.
-   * Flash the `.fs` bitstream using **Gowin Programmer**.
-
-4. **Run Python Host Script:**
+2. **Assemble & Link RISC-V Firmware:**
    ```bash
-   python python/host_controller.py
+   python kodlar.py
    ```
+   *Generates `makine_kodu.hex`, `main_symbol.txt`, `fonk_symbol.txt`, and `global_symbol.txt`.*
+
+3. **Synthesize & Program FPGA:**
+   * Open `system_top.vhd` in Gowin EDA alongside supporting VHDL modules (`loader_fsm.vhd`, `uart_rx.vhd`, `uart_tx.vhd`, `picorv32.v`).
+   * Apply pin constraints from `pinler.cst`.
+   * Synthesize, Place & Route, and flash the bitstream (`.fs`) to the Tang Nano 9K.
+
+4. **Upload Firmware to FPGA:**
+   ```bash
+   python host.py
+   ```
+
+---
+
+## 📁 Directory Structure
+
+```text
+korsanpanda-system_programming/
+├── system_top.vhd          # Top-Level VHDL SoC wrapper connecting CPU, BRAM & MMIO
+├── loader_fsm.vhd          # Hardware FSM for receiving and loading firmware into BRAM
+├── uart_rx.vhd             # UART Receiver module (115200 baud)
+├── uart_tx.vhd             # UART Transmitter module (115200 baud)
+├── pinler.cst              # Physical pin constraints for Tang Nano 9K FPGA
+├── kodlar.py               # Custom RISC-V Assembler & Linker Python implementation
+├── host.py                 # Serial firmware uploader script with checksum verification
+├── opcode_tablosu.txt      # RISC-V instruction opcode mapping reference
+├── main.asm / main2.asm    # RISC-V assembly main program routines
+├── fonksiyon.asm / ...     # Subroutine assembly source files
+├── makine_kodu.hex         # Generated machine code output
+├── *_symbol.txt            # Generated symbol tables for relocation verification
+└── README.md               # Project documentation
+```
